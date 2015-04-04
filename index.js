@@ -14,12 +14,12 @@ var notify = function (text) {
       throw err
     }
 
-    console.log('Notification sent: ' + text)
+    console.log('Notification sent: ' + text, result)
   })
 }
 
 client.stream('statuses/filter', params, function (stream) {
-  console.log('Stream started')
+  notify('Pushover service running')
 
   stream.on('data', function (tweet) {
     if (!tweet) {
@@ -28,7 +28,7 @@ client.stream('statuses/filter', params, function (stream) {
       console.log('Sending', tweet.user.name, tweet.user.id, tweet.text)
       notify(tweet.text)
     } else {
-      console.log('Sending', tweet.user.name, tweet.user.id, tweet.text)
+      console.log('Skipping', tweet.user.name, tweet.user.id, tweet.text)
     }
   })
 
