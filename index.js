@@ -30,11 +30,19 @@ var post = function (text) {
 }
 
 var notify = function (text) {
-  if (!text || config.pust !== true) {
+  if (!text || config.push !== true) {
     return
   }
 
-  p.send({ message: text, title: 'Bundesliga'}, function (err, result) {
+  var title = 'Pushscore'
+
+  if (text.indexOf('#Bundesliga') !== -1) {
+    title = 'Bundesliga'
+  } else if (text.indexOf('#ChampionsLeague') !== -1) {
+    title = 'Champions League'
+  }
+
+  p.send({ message: text, title: title }, function (err, result) {
     if (err) {
       throw err
     }
@@ -50,7 +58,7 @@ client.stream('statuses/filter', params, function (stream) {
     if (!tweet) {
       return
     } else if (_.contains(follow, tweet.user.id)) {
-      console.log('Sending', tweet.user.name, tweet.user.id, tweet.text)
+      console.log('Pushing updated', tweet.user.name, tweet.user.id, tweet.text)
       var message = cleanup(tweet.text)
       notify(message)
       post(message)
