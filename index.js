@@ -4,7 +4,7 @@ var winston = require('winston');
 var transports = [new(winston.transports.Console)({'timestamp': true})];
 
 if (config && config.logPath) {
-  transports.push(new (winston.transports.File)({ filename: config.logPath }));
+  transports.push(new (winston.transports.File)({ filename: config.logPath, json: false }));
 }
 
 var logger = new(winston.Logger)({
