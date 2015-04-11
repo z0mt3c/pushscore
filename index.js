@@ -1,13 +1,19 @@
 var winston = require('winston');
-var logger = new (winston.Logger)({ transports: [ new (winston.transports.Console)({'timestamp':true}) ]});
+var logger = new(winston.Logger)({
+  transports: [
+    new(winston.transports.Console)({
+      'timestamp': true
+    })
+  ]
+});
 
 var _ = require('lodash')
 var Push = require('pushover-notifications')
 var config = require('./config.json')
 
 var twitterConfig = config.twitter;
-var Twitter = require('twitter')
-var client = new Twitter(twitterConfig)
+var Twit = require('twit')
+var client = new Twit(twitterConfig)
 
 var p = new Push(config.pushover)
 
@@ -16,7 +22,8 @@ var params = {
   follow: follow.join(',')
 }
 
-var activeStream;
+var stream;
+var reconnectSheduled = false;
 
 var internals = {
   cleanup: function(text) {
@@ -32,11 +39,11 @@ var internals = {
 
     client.post('statuses/update', {
       status: text
-    }, function(error, tweet, response) {
+    }, function(error, data, response) {
       if (error) {
-        logger.log('error', 'Tweet failed', error)
+        logger.log('error', 'Tweet failed', error.message)
       } else {
-        logger.log('info', 'Tweet posted: ' + text)
+        logger.log('info', 'Tweet posted:', text)
       }
     })
   },
@@ -65,10 +72,12 @@ var internals = {
     })
   },
   onTweet: function(tweet) {
+    logger.log('info', 'Forwarding tweet @%s: %s (userId:%d)', tweet.user.name, tweet.text, tweet.user.id)
+
     if (!tweet) {
       return
     } else if (_.contains(follow, tweet.user.id)) {
-      logger.log('info', 'Pushing updated', tweet.user.name, tweet.user.id, tweet.text)
+      logger.log('info', 'Forwarding tweet @%s: %s (userId:%d)', tweet.user.name, tweet.text, tweet.user.id)
       var message = internals.cleanup(tweet.text)
       internals.notify(message)
       internals.post(message)
@@ -77,34 +86,47 @@ var internals = {
   onError: function(error) {
     throw error
   },
-  onEnd: function() {
-    logger.log('info', 'stream end', arguments)
-  },
   start: function() {
-    client.stream('statuses/filter', params, function(stream) {
-      activeStream = stream
-      internals.post(config.message)
-      stream.on('data', internals.onTweet)
-      stream.on('error', internals.onError)
-      stream.on('end', internals.onEnd)
+    stream = client.stream('statuses/filter', params);
+    internals.post(config.message)
+
+    stream.on('disconnect', function(disconnectMessage) {
+      logger.log('info', 'Stream disconnect:', disconnectMessage)
     })
+
+    stream.on('connect', function(request) {
+      logger.log('info', 'Stream connect')
+      reconnectSheduled = false
+    })
+
+    stream.on('warning', function(warning) {
+      logger.log('info', 'Stream warning:', warning)
+    })
+
+    stream.on('reconnect', function(request, response, connectInterval) {
+      logger.log('info', 'Stream reconnect sheduled in %d ms', connectInterval)
+      reconnectSheduled = true
+    })
+
+    stream.on('tweet', internals.onTweet)
+    stream.on('error', internals.onError)
   },
   restart: function() {
-    logger.log('info', 'Restarting stream...')
-
-    if (activeStream) {
-      try {
-        activeStream.destroy();
-      } catch (e) {
-        logger.log('error', 'Destroying stream failed', e);
-      }
+    if (reconnectSheduled) {
+      logger.log('info', 'Restart cancelled, reconnect sheduled')
+      return;
     }
 
-    internals.start();
+    logger.log('info', 'Stopping stream... (Restart in 60s)')
+    stream.stop();
+    
+    setTimeout(function() {
+      logger.log('info', 'Starting stream...')
+      stream.start();
+    }, 60100)
   }
 }
 
-logger.log('info', 'Starting pushover')
+logger.log('info', 'Starting pushscore')
 internals.start();
-
 module.exports = internals;
