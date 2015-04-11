@@ -1,15 +1,18 @@
+var config = require('./config.json')
+
 var winston = require('winston');
+var transports = [new(winston.transports.Console)({'timestamp': true})];
+
+if (config && config.logPath) {
+  transports.push(new (winston.transports.File)({ filename: config.logPath }));
+}
+
 var logger = new(winston.Logger)({
-  transports: [
-    new(winston.transports.Console)({
-      'timestamp': true
-    })
-  ]
+  transports: transports
 });
 
 var _ = require('lodash')
 var Push = require('pushover-notifications')
-var config = require('./config.json')
 
 var twitterConfig = config.twitter;
 var Twit = require('twit')
