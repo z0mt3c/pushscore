@@ -75,8 +75,6 @@ var internals = {
     })
   },
   onTweet: function(tweet) {
-    logger.log('info', 'Forwarding tweet @%s: %s (userId:%d)', tweet.user.name, tweet.text, tweet.user.id)
-
     if (!tweet) {
       return
     } else if (_.contains(follow, tweet.user.id)) {
