@@ -1,5 +1,5 @@
 var Path = require('path')
-var config = require(Path.join(__dirname, (process.env.CONFIG_FILE || './config.json')))
+var config = require(process.env.CONFIG_FILE || Path.join(__dirname, 'config.json'))
 
 var winston = require('winston')
 var transports = [
