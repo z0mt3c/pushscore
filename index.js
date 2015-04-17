@@ -1,20 +1,23 @@
-var config = require('./config.json')
+var Path = require('path')
+var config = require(Path.join(__dirname, (process.env.CONFIG_FILE || './config.json')))
 
-var winston = require('winston');
-var transports = [new(winston.transports.Console)({'timestamp': true})];
+var winston = require('winston')
+var transports = [
+  new (winston.transports.Console)({'timestamp': true})
+]
 
 if (config && config.logPath) {
-  transports.push(new (winston.transports.File)({ filename: config.logPath, json: false }));
+  transports.push(new (winston.transports.File)({ filename: config.logPath, json: false }))
 }
 
-var logger = new(winston.Logger)({
+var logger = new (winston.Logger)({
   transports: transports
-});
+})
 
 var _ = require('lodash')
 var Push = require('pushover-notifications')
 
-var twitterConfig = config.twitter;
+var twitterConfig = config.twitter
 var Twit = require('twit')
 var client = new Twit(twitterConfig)
 
@@ -25,24 +28,24 @@ var params = {
   follow: follow.join(',')
 }
 
-var stream;
-var reconnectSheduled = false;
+var stream
+var reconnectSheduled = false
 
 var internals = {
-  cleanup: function(text) {
+  cleanup: function (text) {
     if (typeof text === 'string') {
       return text.replace(/http:\/\/[^\s#]*/g, '').replace(/#GoalFlash/g, '').replace(/^Correction: /g, 'Korrektur: ').replace(/[\s]{2,50}/g, ' ')
     }
     return text
   },
-  post: function(text) {
+  post: function (text) {
     if (!text || config.post !== true) {
       return
     }
 
     client.post('statuses/update', {
       status: text
-    }, function(error, data, response) {
+    }, function (error, data, response) {
       if (error) {
         logger.log('error', 'Tweet failed', error.message)
       } else {
@@ -50,7 +53,7 @@ var internals = {
       }
     })
   },
-  notify: function(text) {
+  notify: function (text) {
     if (!text || config.push !== true) {
       return
     }
@@ -66,7 +69,7 @@ var internals = {
     p.send({
       message: text,
       title: title
-    }, function(err, result) {
+    }, function (err, result) {
       if (err) {
         throw err
       }
@@ -74,7 +77,7 @@ var internals = {
       logger.log('info', 'Push message sent: ' + text, result)
     })
   },
-  onTweet: function(tweet) {
+  onTweet: function (tweet) {
     if (!tweet) {
       return
     } else if (_.contains(follow, tweet.user.id)) {
@@ -84,27 +87,27 @@ var internals = {
       internals.post(message)
     }
   },
-  onError: function(error) {
+  onError: function (error) {
     throw error
   },
-  start: function() {
-    stream = client.stream('statuses/filter', params);
+  start: function () {
+    stream = client.stream('statuses/filter', params)
     internals.post(config.message)
 
-    stream.on('disconnect', function(disconnectMessage) {
+    stream.on('disconnect', function (disconnectMessage) {
       logger.log('info', 'Stream disconnect:', disconnectMessage)
     })
 
-    stream.on('connect', function(request) {
+    stream.on('connect', function (request) {
       logger.log('info', 'Stream connect')
       reconnectSheduled = false
     })
 
-    stream.on('warning', function(warning) {
+    stream.on('warning', function (warning) {
       logger.log('info', 'Stream warning:', warning)
     })
 
-    stream.on('reconnect', function(request, response, connectInterval) {
+    stream.on('reconnect', function (request, response, connectInterval) {
       logger.log('info', 'Stream reconnect sheduled in %d ms', connectInterval)
       reconnectSheduled = true
     })
@@ -112,22 +115,22 @@ var internals = {
     stream.on('tweet', internals.onTweet)
     stream.on('error', internals.onError)
   },
-  restart: function() {
+  restart: function () {
     if (reconnectSheduled) {
       logger.log('info', 'Restart cancelled, reconnect sheduled')
-      return;
+      return
     }
 
     logger.log('info', 'Stopping stream... (Restart in 60s)')
-    stream.stop();
-    
-    setTimeout(function() {
+    stream.stop()
+
+    setTimeout(function () {
       logger.log('info', 'Starting stream...')
-      stream.start();
+      stream.start()
     }, 60100)
   }
 }
 
 logger.log('info', 'Starting pushscore')
-internals.start();
-module.exports = internals;
+internals.start()
+module.exports = internals

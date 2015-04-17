@@ -1,0 +1,21 @@
+{
+  "apps": [
+    {
+      "name": "evt-light-tixx-mock",
+      "script": "index.js"
+    }
+  ],
+  "deploy": {
+    "dev": {
+      "user": "nodejs",
+      "host": "10.1.1.11",
+      "ref": "origin/master",
+      "repo": "git@github.com:z0mt3c/pushscore.git",
+      "path": "/home/nodejs/pushscore",
+      "post-deploy": "npm install && npm update && pm2 startOrRestart ecosystem.json --env dev",
+      "env": {
+        "CONFIG_FILE": "../config/pushscore.json"
+      }
+    }
+  }
+}
