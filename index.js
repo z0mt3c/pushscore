@@ -20,16 +20,10 @@ var Push = require('pushover-notifications')
 var twitterConfig = config.twitter
 var Twit = require('twit')
 var client = new Twit(twitterConfig)
-
 var p = new Push(config.pushover)
 
-var follow = config.follow
-var params = {
-  follow: follow.join(',')
-}
-
-var stream
-var reconnectSheduled = false
+var request = require('request')
+var lastMessage = null
 
 var internals = {
   cleanup: function (text) {
@@ -77,57 +71,43 @@ var internals = {
       logger.log('info', 'Push message sent: ' + text, result)
     })
   },
-  onTweet: function (tweet) {
-    if (!tweet) {
+  onMessage: function (message) {
+    if (lastMessage === message) {
       return
-    } else if (_.contains(follow, tweet.user.id)) {
-      logger.log('info', 'Forwarding tweet @%s: %s (userId:%d)', tweet.user.name, tweet.text, tweet.user.id)
-      var message = internals.cleanup(tweet.text)
-      internals.notify(message)
-      internals.post(message)
     }
+
+    lastMessage = message
+    logger.log('info', 'Pushing message: %s', message)
+    message = internals.cleanup(message)
+    internals.notify(message)
+    internals.post(message)
   },
   onError: function (error) {
     throw error
   },
   start: function () {
-    stream = client.stream('statuses/filter', params)
-    internals.post(config.message)
+    request({ url: 'http://bmwgolf-api-masters.elasticbeanstalk.com/json/?playerId=32204', json: true }, function (error, response, body) {
+      if (!error && response.statusCode === 200) {
+        var listOfRounds = _.reduce(body, function (memo, round, name) {
+          if (name.indexOf('round_') === 0) {
+            memo.push({ name: name, round: round })
+          }
+          return memo
+        }, [])
 
-    stream.on('disconnect', function (disconnectMessage) {
-      logger.log('info', 'Stream disconnect:', disconnectMessage)
+        var lastRound = _.last(listOfRounds)
+        var round = lastRound.round
+        var scores = _.filter(round.scores, function (score) { return score.strokes > 0})
+        var lastScore = _.last(scores)
+        var total = _.reduce(listOfRounds, function (memo, round) {
+          memo += round.round.topar
+          return memo
+        }, 0)
+
+        var message = 'Martin Kaymer auf Loch ' + lastScore.hole + ' mit ' + lastScore.strokes + ' Schlägen. Jetzt bei ' + total + '.'
+        internals.onMessage(message)
+      }
     })
-
-    stream.on('connect', function (request) {
-      logger.log('info', 'Stream connect')
-      reconnectSheduled = false
-    })
-
-    stream.on('warning', function (warning) {
-      logger.log('info', 'Stream warning:', warning)
-    })
-
-    stream.on('reconnect', function (request, response, connectInterval) {
-      logger.log('info', 'Stream reconnect sheduled in %d ms', connectInterval)
-      reconnectSheduled = true
-    })
-
-    stream.on('tweet', internals.onTweet)
-    stream.on('error', internals.onError)
-  },
-  restart: function () {
-    if (reconnectSheduled) {
-      logger.log('info', 'Restart cancelled, reconnect sheduled')
-      return
-    }
-
-    logger.log('info', 'Stopping stream... (Restart in 60s)')
-    stream.stop()
-
-    setTimeout(function () {
-      logger.log('info', 'Starting stream...')
-      stream.start()
-    }, 60100)
   }
 }
 

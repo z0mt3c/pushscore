@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "name": "pushscore",
+      "name": "pushscore-golf",
       "script": "index.js"
     }
   ],
@@ -11,7 +11,7 @@
       "host": "10.1.1.11",
       "ref": "origin/master",
       "repo": "git@github.com:z0mt3c/pushscore.git",
-      "path": "/home/nodejs/pushscore",
+      "path": "/home/nodejs/pushscore-golf",
       "post-deploy": "npm install && npm update && pm2 startOrRestart ecosystem.json --env dev",
       "env": {
         "CONFIG_FILE": "/home/nodejs/config/pushscore.json"
