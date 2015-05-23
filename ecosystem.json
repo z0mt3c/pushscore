@@ -9,7 +9,7 @@
     "dev": {
       "user": "nodejs",
       "host": "10.1.1.11",
-      "ref": "origin/master",
+      "ref": "origin/golf",
       "repo": "git@github.com:z0mt3c/pushscore.git",
       "path": "/home/nodejs/pushscore-golf",
       "post-deploy": "npm install && npm update && pm2 startOrRestart ecosystem.json --env dev",
