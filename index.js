@@ -86,28 +86,30 @@ var internals = {
     throw error
   },
   start: function () {
-    request({ url: 'http://bmwgolf-api-masters.elasticbeanstalk.com/json/?playerId=32204', json: true }, function (error, response, body) {
-      if (!error && response.statusCode === 200) {
-        var listOfRounds = _.reduce(body, function (memo, round, name) {
-          if (name.indexOf('round_') === 0) {
-            memo.push({ name: name, round: round })
-          }
-          return memo
-        }, [])
+    setInterval(function () {
+      request({ url: 'http://bmwgolf-api-masters.elasticbeanstalk.com/json/?playerId=32204', json: true }, function (error, response, body) {
+        if (!error && response.statusCode === 200) {
+          var listOfRounds = _.reduce(body, function (memo, round, name) {
+            if (name.indexOf('round_') === 0) {
+              memo.push({ name: name, round: round })
+            }
+            return memo
+          }, [])
 
-        var lastRound = _.last(listOfRounds)
-        var round = lastRound.round
-        var scores = _.filter(round.scores, function (score) { return score.strokes > 0})
-        var lastScore = _.last(scores)
-        var total = _.reduce(listOfRounds, function (memo, round) {
-          memo += round.round.topar
-          return memo
-        }, 0)
+          var lastRound = _.last(listOfRounds)
+          var round = lastRound.round
+          var scores = _.filter(round.scores, function (score) { return score.strokes > 0})
+          var lastScore = _.last(scores)
+          var total = _.reduce(listOfRounds, function (memo, round) {
+            memo += round.round.topar
+            return memo
+          }, 0)
 
-        var message = 'Martin Kaymer auf Loch ' + lastScore.hole + ' mit ' + lastScore.strokes + ' Schlägen. Jetzt bei ' + total + '.'
-        internals.onMessage(message)
-      }
-    })
+          var message = 'Martin Kaymer auf Loch ' + lastScore.hole + ' mit ' + lastScore.strokes + ' Schlägen. Jetzt bei ' + total + '.'
+          internals.onMessage(message)
+        }
+      })
+    }, 15000)
   }
 }
 
