@@ -24,7 +24,44 @@ var p = new Push(config.pushover)
 
 var request = require('request')
 var lastMessage = null
+var moment = require('moment')
 
+var start = moment('2015-07-16 7:00', 'YYYY-MM-DD HH:mm')
+var end = moment('2015-07-19 23:00', 'YYYY-MM-DD HH:mm')
+// var interval = null
+// var fs = require('fs')
+
+var vorgaben = {
+  '1': 4,
+  '2': 4,
+  '3': 4,
+  '4': 4,
+  '5': 5,
+  '6': 4,
+  '7': 4,
+  '8': 3,
+  '9': 4,
+  '10': 4,
+  '11': 3,
+  '12': 4,
+  '13': 4,
+  '14': 5,
+  '15': 4,
+  '16': 4,
+  '17': 4,
+  '18': 4
+}
+
+var vorgabeNamen = {
+  '-2': 'Eagle',
+  '-1': 'Birdie',
+  '0': 'Par',
+  '1': 'Bogey',
+  '2': 'Double Bogey',
+  '3': 'Triple Bogey'
+}
+
+var sent = {}
 var internals = {
   cleanup: function (text) {
     if (typeof text === 'string') {
@@ -85,30 +122,69 @@ var internals = {
   onError: function (error) {
     throw error
   },
-  start: function () {
-    setInterval(function () {
-      request({ url: 'http://bmwgolf-api-masters.elasticbeanstalk.com/json/?playerId=32204', json: true }, function (error, response, body) {
-        if (!error && response.statusCode === 200) {
-          var listOfRounds = _.reduce(body, function (memo, round, name) {
-            if (name.indexOf('round_') === 0) {
-              memo.push({ name: name, round: round })
-            }
-            return memo
-          }, [])
+  processHoles: function (body) {
+    var results = _.filter(body, function (player) {
+      var filter = false
 
-          var lastRound = _.last(listOfRounds)
-          var round = lastRound.round
-          var scores = _.filter(round.scores, function (score) { return score.strokes > 0})
-          var lastScore = _.last(scores)
-          var total = _.reduce(listOfRounds, function (memo, round) {
-            memo += round.round.topar
-            return memo
-          }, 0)
+      if (player.Nationality.Code === 'GER') {
+        filter = true
+      }
 
-          var message = 'Martin Kaymer auf Loch ' + lastScore.hole + ' mit ' + lastScore.strokes + ' Schlägen. Jetzt bei ' + total + '.'
+      return filter
+    })
+
+    _.each(results, function (result) {
+      if (!result || result.RoundStarted !== true) {
+        return
+      }
+
+      var splitted = result.Name.split(',')
+      var name = splitted[0].toLowerCase().trim()
+      name = splitted[1].trim() + ' ' + name.charAt(0).toUpperCase() + name.slice(1)
+
+      var lastPlayedHole = _.last(_.filter(result.Holes, function (hole) {
+        return hole.Score !== ''
+      }))
+
+      if (lastPlayedHole != null) {
+        var vorgabe = vorgaben[lastPlayedHole.HoleNumber]
+        var type = vorgabeNamen[lastPlayedHole.Score - vorgabe] === undefined ? 'Par bei ' + vorgabe : vorgabeNamen[lastPlayedHole.Score - vorgabe]
+        var message = name + ' auf Loch ' + lastPlayedHole.HoleNumber + ' mit ' + lastPlayedHole.Score + ' Schlägen (' + type + ') bei ' + result.Today + '/' + result.ToPar + ' Tag/Turnier auf Pos ' + result.Position.DisplayValue + ' #theopen'
+
+        // console.log(lastPlayedHole.Score)
+        // console.log(lastPlayedHole.HoleNumber)
+        // console.log(result.ToPar)
+        // console.log(result.Today)
+        // console.log(result.Movers)
+        // console.log(result.Position.DisplayValue)
+        // console.log(result.ID)
+        // console.log(result.RoundStarted)
+        // console.log(result.Status)
+        // console.log(vorgabe)
+
+        if (sent[result.ID] !== message) {
+          sent[result.ID] = message
+          logger.log('info', message)
           internals.onMessage(message)
         }
+      }
+    })
+  },
+  start: function () {
+    setInterval(function () {
+      var now = moment()
+      if (!now.isBetween(start, end)) {
+        return
+      }
+
+      var round = moment.duration(now.valueOf() - start.valueOf()).days() + 1
+
+      request({ url: 'http://www.theopen.com/api/holebyhole?roundno=' + round, json: true }, function (error, response, body) {
+        if (!error && response.statusCode === 200) {
+          internals.processHoles(body)
+        }
       })
+      // internals.processHoles(JSON.parse(fs.readFileSync('./holes.json')))
     }, 15000)
   }
 }

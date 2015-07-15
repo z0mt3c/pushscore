@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "name": "pushscore-golf",
+      "name": "pushscore-themasters",
       "script": "index.js"
     }
   ],
@@ -9,9 +9,9 @@
     "dev": {
       "user": "nodejs",
       "host": "10.1.1.11",
-      "ref": "origin/golf",
+      "ref": "origin/themasters",
       "repo": "git@github.com:z0mt3c/pushscore.git",
-      "path": "/home/nodejs/pushscore-golf",
+      "path": "/home/nodejs/pushscore-themasters",
       "post-deploy": "npm install && npm update && pm2 startOrRestart ecosystem.json --env dev",
       "env": {
         "CONFIG_FILE": "/home/nodejs/config/pushscore.json"
@@ -20,9 +20,9 @@
     "w0rkz": {
       "user": "nodejs",
       "host": "w0rkz.de",
-      "ref": "origin/golf",
+      "ref": "origin/themasters",
       "repo": "git@github.com:z0mt3c/pushscore.git",
-      "path": "/home/nodejs/pushscore-golf",
+      "path": "/home/nodejs/pushscore-themasters",
       "post-deploy": "npm install && npm update && pm2 startOrRestart ecosystem.json --env dev",
       "env": {
         "CONFIG_FILE": "/home/nodejs/config/pushscore.json"
