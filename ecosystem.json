@@ -10,7 +10,7 @@
       "user": "nodejs",
       "host": "10.1.1.11",
       "ref": "origin/themasters",
-      "repo": "git@github.com:z0mt3c/pushscore.git",
+      "repo": "https://github.com/z0mt3c/pushscore.git",
       "path": "/home/nodejs/pushscore-themasters",
       "post-deploy": "npm install && npm update && pm2 startOrRestart ecosystem.json --env dev",
       "env": {
@@ -21,7 +21,7 @@
       "user": "nodejs",
       "host": "w0rkz.de",
       "ref": "origin/themasters",
-      "repo": "git@github.com:z0mt3c/pushscore.git",
+      "repo": "https://github.com/z0mt3c/pushscore.git",
       "path": "/home/nodejs/pushscore-themasters",
       "post-deploy": "npm install && npm update && pm2 startOrRestart ecosystem.json --env dev",
       "env": {
