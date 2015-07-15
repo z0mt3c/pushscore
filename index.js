@@ -171,6 +171,10 @@ var internals = {
     })
   },
   start: function () {
+    if (config.message) {
+      internals.post(config.message)
+    }
+
     setInterval(function () {
       var now = moment()
       if (!now.isBetween(start, end)) {
