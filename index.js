@@ -149,7 +149,7 @@ var internals = {
       if (lastPlayedHole != null) {
         var vorgabe = vorgaben[lastPlayedHole.HoleNumber]
         var type = vorgabeNamen[lastPlayedHole.Score - vorgabe] === undefined ? 'Par bei ' + vorgabe : vorgabeNamen[lastPlayedHole.Score - vorgabe]
-        var message = name + ' auf Loch ' + lastPlayedHole.HoleNumber + ' mit ' + lastPlayedHole.Score + ' Schlägen (' + type + ') bei ' + result.Today + '/' + result.ToPar + ' Tag/Turnier auf Pos ' + result.Position.DisplayValue + ' #theopen'
+        var message = name + ' auf Loch ' + lastPlayedHole.HoleNumber + ' mit ' + lastPlayedHole.Score + ' Schlägen (' + type + ') bei ' + result.Today + '/' + result.ToPar + ' Tag/Turnier auf Pos '
 
         // console.log(lastPlayedHole.Score)
         // console.log(lastPlayedHole.HoleNumber)
@@ -164,8 +164,8 @@ var internals = {
 
         if (sent[result.ID] !== message) {
           sent[result.ID] = message
-          logger.log('info', message)
-          internals.onMessage(message)
+          logger.log('info', message + result.Position.DisplayValue + ' #theopen')
+          internals.onMessage(message + result.Position.DisplayValue + ' #theopen')
         }
       }
     })
